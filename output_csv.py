@@ -99,9 +99,9 @@ def get_hdd_info(line, basic):
 path = './' + date.today().strftime("%Y_%m_%d")
 try:
     os.mkdir(path)
-    print("創建資料夾成功")
+    print(f"創建資料夾成功: {date.today().strftime("%Y_%m_%d")}")
 except:
-    print("創建資料夾失敗")
+    print(f"資料夾已存在: {date.today().strftime("%Y_%m_%d")}")
 try:
     mb_os_csv = open(path+'/電腦主機版_作業系統資訊.csv', 'w', newline='', encoding='UTF-8')
     mb_os_writer = csv.DictWriter(mb_os_csv, fieldnames=basic_title+mb_os_title)
@@ -127,27 +127,40 @@ except:
     hdd_csv.close()
     exit()
 
-
+data_fields = ['電腦主機名稱及當前登入的使用者', '主機板資訊', '作業系統資訊', 'CPU資訊', '當地時間', '最後一次更新的資訊', '記憶體資訊', '網路卡IP資訊', '網路印表機資訊及硬碟資訊']
+print('=====')
 for filename in os.listdir(os.getcwd()):
     if filename.endswith('.txt') and ('作業系統更新狀況' in filename or 'ComputerInfo' in filename):
         # open file
         with open(os.path.join(os.getcwd(), filename), 'r') as f:
             print(filename)
+            f_fileds = []
             line = f.readline().strip('\n')
             while line is not None and line != '':
                 if '取得電腦主機名稱及當前登入的使用者' in line:
                     basic_info = get_basic_info(f)
+                    f_fileds.append(data_fields[0])
                 elif '取得電腦主機的主機板資訊' in line:
                     mb_os_info = get_mb_info(f, basic_info)
+                    f_fileds.append(data_fields[1])
                 elif '作業系統資訊' in line:
                     mb_os_info = append_os_info(f, mb_os_info)
-                elif 'CPU資訊' in line or '取得當地時間' in line or '取得最後一次更新的資訊' in line:
+                    f_fileds.append(data_fields[2])
+                elif 'CPU資訊' in line:
                     mb_os_info = append_cpu_info(f, mb_os_info)
+                    f_fileds.append(data_fields[3])
+                elif '取得當地時間' in line:
+                    mb_os_info = append_cpu_info(f, mb_os_info)
+                    f_fileds.append(data_fields[4])
+                elif '取得最後一次更新的資訊' in line:
+                    mb_os_info = append_cpu_info(f, mb_os_info)
+                    f_fileds.append(data_fields[5])
                 elif '記憶體資訊' in line:
                     line = f.readline().strip('\n')
                     while '製造商' in line:
                         ram_info, line = get_ram_info(f, basic_info, line)
                         ram_writer.writerow(ram_info)
+                    f_fileds.append(data_fields[6])
                 elif '網路卡IP資訊' in line:
                     # skip above lines
                     while '---' not in line:
@@ -158,6 +171,7 @@ for filename in os.listdir(os.getcwd()):
                         nic_info = get_nic_info(line, basic_info)
                         nic_writer.writerow(nic_info)
                         line = f.readline().strip('\n')
+                    f_fileds.append(data_fields[7])
                 elif '取得網路印表機資訊及硬碟資訊' in line:
                     line = f.readline().strip('\n')
                     while line != '':
@@ -173,11 +187,15 @@ for filename in os.listdir(os.getcwd()):
                         hdd_info = get_hdd_info(line, basic_info)
                         hdd_writer.writerow(hdd_info)
                         line = f.readline().strip('\n')
+                    f_fileds.append(data_fields[8])
 
                 line = f.readline()
                 # print(line, end='')
             mb_os_writer.writerow(mb_os_info)
-
+            for field in data_fields:
+                if field not in f_fileds:
+                    print(f'\033[93m{field}不存在\033[0m')
+            print('=====')
 mb_os_csv.close()
 ram_csv.close()
 nic_csv.close()
