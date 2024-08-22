@@ -35,26 +35,36 @@ hdd_title = ['HDDID', 'HDDModel', 'HDDSizeGB']
 
 def get_basic_info(file):
     basic_info = {}
-    for _ in range(len(basic_dict)):
-        line = file.readline().strip('\n')
-        [key, value] = line.split(':', maxsplit=1)
-        basic_info[basic_dict[key]] = value.strip()
-    basic_info['InsertDate'] = date.today().strftime("%m/%d/%y")
+    try:
+        for _ in range(len(basic_dict)):
+            line = file.readline().strip('\n')
+            [key, value] = line.split(':', maxsplit=1)
+            basic_info[basic_dict[key]] = value.strip()
+        basic_info['InsertDate'] = date.today().strftime("%m/%d/%y")
+    except:
+        print(f'\033[91m取得基本資訊時發生錯誤\033[0m')
     return basic_info
+
 
 def get_mb_info(file, basic):
     mb_info = dict(basic)
-    for _ in range(4):
-        line = file.readline().strip('\n')
-        [key, value] = line.split(':', maxsplit=1)
-        mb_info[mb_os_dict[key]] = value.strip()
+    try:
+        for _ in range(4):
+            line = file.readline().strip('\n')
+            [key, value] = line.split(':', maxsplit=1)
+            mb_info[mb_os_dict[key]] = value.strip()
+    except:
+        print(f'\033[91m取得主機板資訊時發生錯誤\033[0m')
     return mb_info
 
 def append_os_info(file, orig):
-    for _ in range(2):
-        line = file.readline().strip('\n')
-        [key, value] = line.split(':', maxsplit=1)
-        orig[mb_os_dict[key]] = value.strip()
+    try:
+        for _ in range(2):
+            line = file.readline().strip('\n')
+            [key, value] = line.split(':', maxsplit=1)
+            orig[mb_os_dict[key]] = value.strip()
+    except:
+        print(f'\033[91m取得作業系統資訊時發生錯誤\033[0m')
     return orig
 
 def append_cpu_info(file, orig):
@@ -65,33 +75,45 @@ def append_cpu_info(file, orig):
 
 def get_ram_info(file, basic, line):
     ram_info = dict(basic)
-    for _ in range(5):
-        if ':' in line:
-            [key, value] = line.split(':', maxsplit=1)
-            ram_info[ram_dict[key]] = value.strip()
-        line = file.readline().strip('\n')
+    try:
+        for _ in range(5):
+            if ':' in line:
+                [key, value] = line.split(':', maxsplit=1)
+                ram_info[ram_dict[key]] = value.strip()
+            line = file.readline().strip('\n')
+    except:
+        print(f'\033[91m取得記憶體資訊時發生錯誤\033[0m')
     return ram_info, line
 
 def get_nic_info(line, basic):
     nic_info = dict(basic)
-    modified = ' '.join(line.split())
-    nic_ary = modified.rsplit(' ', len(nic_title) - 1)
-    for i in range(len(nic_title)):
-        nic_info[nic_title[i]] = nic_ary[i]
+    try:
+        modified = ' '.join(line.split())
+        nic_ary = modified.rsplit(' ', len(nic_title) - 1)
+        for i in range(len(nic_ary)):
+            nic_info[nic_title[i]] = nic_ary[i]
+    except:
+        print(f'\033[91m取得網路卡資訊時發生錯誤\033[0m')
     return nic_info
 
 def get_printer_info(line, basic):
     printer_info = dict(basic)
-    printer_ary = line.split(' 的 IPAddr是 ')
-    for i in range(len(printer_title)):
-        printer_info[printer_title[i]] = printer_ary[i]
+    try:
+        printer_ary = line.split(' 的 IPAddr是 ')
+        for i in range(len(printer_title)):
+            printer_info[printer_title[i]] = printer_ary[i]
+    except:
+        print(f'\033[91m取得印表機資訊時發生錯誤\033[0m')
     return printer_info
 
 def get_hdd_info(line, basic):
     hdd_info = dict(basic)
-    hdd_ary = ' '.join(line.split()).split(' ')
-    for i in range(len(hdd_title)):
-        hdd_info[hdd_title[i]] = hdd_ary[i]
+    try:
+        hdd_ary = ' '.join(line.split()).split(' ')
+        for i in range(len(hdd_title)):
+            hdd_info[hdd_title[i]] = hdd_ary[i]
+    except:
+        print(f'\033[91m取得硬碟資訊時發生錯誤\033[0m')
     return hdd_info
 
 
@@ -147,13 +169,22 @@ for filename in os.listdir(os.getcwd()):
                     mb_os_info = append_os_info(f, mb_os_info)
                     f_fileds.append(data_fields[2])
                 elif 'CPU資訊' in line:
-                    mb_os_info = append_cpu_info(f, mb_os_info)
+                    try:
+                        mb_os_info = append_cpu_info(f, mb_os_info)
+                    except:
+                        print(f'\033[91m取得CPU資訊時發生錯誤\033[0m')
                     f_fileds.append(data_fields[3])
                 elif '取得當地時間' in line:
-                    mb_os_info = append_cpu_info(f, mb_os_info)
+                    try:
+                        mb_os_info = append_cpu_info(f, mb_os_info)
+                    except:
+                        print(f'\033[91m取得當地時間時發生錯誤\033[0m')
                     f_fileds.append(data_fields[4])
                 elif '取得最後一次更新的資訊' in line:
-                    mb_os_info = append_cpu_info(f, mb_os_info)
+                    try:
+                        mb_os_info = append_cpu_info(f, mb_os_info)
+                    except:
+                        print(f'\033[91m取得最後一次更新的資訊時發生錯誤\033[0m')
                     f_fileds.append(data_fields[5])
                 elif '記憶體資訊' in line:
                     line = f.readline().strip('\n')
