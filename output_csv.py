@@ -33,11 +33,12 @@ nic_title = ['NicName', 'MacAddress', 'NicStatus', 'IPAddress']
 printer_title = ['PrintName', 'PrintIPAddr']
 hdd_title = ['HDDID', 'HDDModel', 'HDDSizeGB']
 
-def get_basic_info(file):
+def get_basic_info(lines, idx):
     basic_info = {}
     try:
-        for _ in range(len(basic_dict)):
-            line = file.readline().strip('\n')
+        for _ in range(3):
+            line = lines[idx].strip('\n')
+            idx += 1
             [key, value] = line.split(':', maxsplit=1)
             basic_info[basic_dict[key]] = value.strip()
         basic_info['InsertDate'] = date.today().strftime("%m/%d/%y")
@@ -45,53 +46,60 @@ def get_basic_info(file):
         print(f'\033[91m取得基本資訊時發生錯誤\033[0m')
     return basic_info
 
-
-def get_mb_info(file, basic):
+def get_mb_info(lines, idx, basic):
     mb_info = dict(basic)
     try:
         for _ in range(4):
-            line = file.readline().strip('\n')
+            line = lines[idx].strip('\n')
+            idx += 1
             [key, value] = line.split(':', maxsplit=1)
             mb_info[mb_os_dict[key]] = value.strip()
     except:
         print(f'\033[91m取得主機板資訊時發生錯誤\033[0m')
     return mb_info
 
-def append_os_info(file, orig):
+def append_os_info(lines, idx, orig):
     try:
         for _ in range(2):
-            line = file.readline().strip('\n')
+            line = lines[idx].strip('\n')
+            idx += 1
             [key, value] = line.split(':', maxsplit=1)
             orig[mb_os_dict[key]] = value.strip()
     except:
         print(f'\033[91m取得作業系統資訊時發生錯誤\033[0m')
     return orig
 
-def append_cpu_info(file, orig):
-    line = file.readline().strip('\n')
+def append_single_info(line, orig):
+    line = line.strip('\n')
     [key, value] = line.split(':', maxsplit=1)
     orig[mb_os_dict[key]] = value.strip()
     return orig
 
-def get_ram_info(file, basic, line):
+def get_ram_info(lines, idx, basic):
     ram_info = dict(basic)
     try:
         for _ in range(5):
+            line = lines[idx].strip('\n')
+            idx += 1
             if ':' in line:
                 [key, value] = line.split(':', maxsplit=1)
                 ram_info[ram_dict[key]] = value.strip()
-            line = file.readline().strip('\n')
     except:
         print(f'\033[91m取得記憶體資訊時發生錯誤\033[0m')
-    return ram_info, line
+    return ram_info
 
-def get_nic_info(line, basic):
+def get_nic_info(line, basic, ip_len):
     nic_info = dict(basic)
     try:
-        modified = ' '.join(line.split())
-        nic_ary = modified.rsplit(' ', len(nic_title) - 1)
+        nic_ary = []
+        end = len(line)
+        for size in ip_len:
+            nic_ary.append(line[end-size:end])
+            end -= size
+        nic_ary.append(line[0:end])
+        nic_ary.reverse()
         for i in range(len(nic_ary)):
-            nic_info[nic_title[i]] = nic_ary[i]
+            nic_info[nic_title[i]] = nic_ary[i].strip()
     except:
         print(f'\033[91m取得網路卡資訊時發生錯誤\033[0m')
     return nic_info
@@ -109,13 +117,15 @@ def get_printer_info(line, basic):
 def get_hdd_info(line, basic):
     hdd_info = dict(basic)
     try:
-        hdd_ary = ' '.join(line.split()).split(' ')
+        hdd_string = ' '.join(line.split())
+        hdd_ary = hdd_string.split(' ', 1)
+        remain = hdd_ary.pop()
+        hdd_ary += remain.rsplit(' ', 1)
         for i in range(len(hdd_title)):
             hdd_info[hdd_title[i]] = hdd_ary[i]
     except:
         print(f'\033[91m取得硬碟資訊時發生錯誤\033[0m')
     return hdd_info
-
 
 
 path = './' + date.today().strftime("%Y_%m_%d")
@@ -157,71 +167,122 @@ for filename in os.listdir(os.getcwd()):
         with open(os.path.join(os.getcwd(), filename), 'r') as f:
             print(filename)
             f_fileds = []
-            line = f.readline().strip('\n')
-            while line is not None and line != '':
-                if '取得電腦主機名稱及當前登入的使用者' in line:
-                    basic_info = get_basic_info(f)
-                    f_fileds.append(data_fields[0])
-                elif '取得電腦主機的主機板資訊' in line:
-                    mb_os_info = get_mb_info(f, basic_info)
-                    f_fileds.append(data_fields[1])
-                elif '作業系統資訊' in line:
-                    mb_os_info = append_os_info(f, mb_os_info)
-                    f_fileds.append(data_fields[2])
-                elif 'CPU資訊' in line:
-                    try:
-                        mb_os_info = append_cpu_info(f, mb_os_info)
-                    except:
-                        print(f'\033[91m取得CPU資訊時發生錯誤\033[0m')
-                    f_fileds.append(data_fields[3])
-                elif '取得當地時間' in line:
-                    try:
-                        mb_os_info = append_cpu_info(f, mb_os_info)
-                    except:
-                        print(f'\033[91m取得當地時間時發生錯誤\033[0m')
-                    f_fileds.append(data_fields[4])
-                elif '取得最後一次更新的資訊' in line:
-                    try:
-                        mb_os_info = append_cpu_info(f, mb_os_info)
-                    except:
-                        print(f'\033[91m取得最後一次更新的資訊時發生錯誤\033[0m')
-                    f_fileds.append(data_fields[5])
-                elif '記憶體資訊' in line:
-                    line = f.readline().strip('\n')
-                    while '製造商' in line:
-                        ram_info, line = get_ram_info(f, basic_info, line)
-                        ram_writer.writerow(ram_info)
-                    f_fileds.append(data_fields[6])
-                elif '網路卡IP資訊' in line:
-                    # skip above lines
-                    while '---' not in line:
-                        line = f.readline().strip('\n')
-                    # read nic section
-                    line = f.readline().strip('\n')
-                    while line != '':
-                        nic_info = get_nic_info(line, basic_info)
-                        nic_writer.writerow(nic_info)
-                        line = f.readline().strip('\n')
-                    f_fileds.append(data_fields[7])
-                elif '取得網路印表機資訊及硬碟資訊' in line:
-                    line = f.readline().strip('\n')
-                    while line != '':
-                        printer_info = get_printer_info(line, basic_info)
-                        printer_writer.writerow(printer_info)
-                        line = f.readline().strip('\n')
-                    # skip above lines
-                    while '---' not in line:
-                        line = f.readline().strip('\n')
-                    # read hdd section
-                    line = f.readline().strip('\n')
-                    while line != '':
-                        hdd_info = get_hdd_info(line, basic_info)
-                        hdd_writer.writerow(hdd_info)
-                        line = f.readline().strip('\n')
-                    f_fileds.append(data_fields[8])
+            lines = f.readlines()
+            for idx, line in enumerate(lines):
+                if '取得電腦主機名稱及當前登入的使用者' not in line:
+                    continue
+                basic_info = get_basic_info(lines, idx+1)
+                f_fileds.append(data_fields[0])
+                break
 
-                line = f.readline()
-                # print(line, end='')
+            for idx, line in enumerate(lines):
+                if '取得電腦主機的主機板資訊' not in line:
+                    continue
+                mb_os_info = get_mb_info(lines, idx+1, basic_info)
+                f_fileds.append(data_fields[1])
+                break
+
+            for idx, line in enumerate(lines):
+                if '作業系統資訊' not in line:
+                    continue
+                mb_os_info = append_os_info(lines, idx+1, mb_os_info)
+                f_fileds.append(data_fields[2])
+                break
+
+            for idx, line in enumerate(lines):
+                if 'CPU資訊' not in line:
+                    continue
+                try:
+                    mb_os_info = append_single_info(lines[idx+1], mb_os_info)
+                except:
+                    print(f'\033[91m取得CPU資訊時發生錯誤\033[0m')
+                f_fileds.append(data_fields[3])
+                break
+
+            for idx, line in enumerate(lines):
+                if '當地時間:' not in line:
+                    continue
+                try:
+                    mb_os_info = append_single_info(lines[idx], mb_os_info)
+                except:
+                    print(f'\033[91m取得當地時間時發生錯誤\033[0m')
+                f_fileds.append(data_fields[4])
+                break
+
+            for idx, line in enumerate(lines):
+                if '系統最後更新時間:' not in line:
+                    continue
+                try:
+                    mb_os_info = append_single_info(lines[idx], mb_os_info)
+                except:
+                    print(f'\033[91m取得最後一次更新的資訊時發生錯誤\033[0m')
+                f_fileds.append(data_fields[5])
+                break
+            
+            for idx, line in enumerate(lines):
+                if '記憶體資訊' not in line:
+                    continue
+                idx += 1
+                while '製造商' in lines[idx]:
+                    ram_info = get_ram_info(lines, idx, basic_info)
+                    idx += 5
+                    ram_writer.writerow(ram_info)
+                f_fileds.append(data_fields[6])
+                break
+
+            for idx, line in enumerate(lines):
+                if '網路卡IP資訊' not in line:
+                    continue
+                idx += 1
+                # skip above lines
+                while 'Name' not in lines[idx]:
+                    idx += 1
+                line = lines[idx].strip('\n')
+                ip_len = []
+                ip_len.append(line.find('Status') - line.find('MacAddress'))
+                ip_len.append(line.find('IPAddress') - line.find('Status'))
+                ip_len.append(len(line) - line.find('IPAddress'))
+                ip_len.reverse()
+                # read nic section
+                # print(ip_len)
+                idx += 2
+                line = lines[idx].strip('\n')
+                while line != '':
+                    nic_names = ('乙太網路', 'Wi-Fi', '藍牙網路連線', '區域連線', 'Ethernet')
+                    if(line.startswith(nic_names)):
+                        nic_info = get_nic_info(line, basic_info, ip_len)
+                        # print(line)
+                        # print(nic_info)
+                        nic_writer.writerow(nic_info)
+                    idx += 1
+                    line = lines[idx].strip('\n')
+                f_fileds.append(data_fields[7])
+                break
+
+            for idx, line in enumerate(lines):
+                if '取得網路印表機資訊及硬碟資訊' not in line:
+                    continue
+                idx += 1
+                line = lines[idx].strip('\n')
+                while line != '':
+                    printer_info = get_printer_info(line, basic_info)
+                    printer_writer.writerow(printer_info)
+                    idx += 1
+                    line = lines[idx].strip('\n')
+                # skip above lines
+                while '---' not in lines[idx]:
+                    idx += 1
+                idx += 1
+                # read hdd section
+                line = lines[idx].strip('\n')
+                while line != '':
+                    hdd_info = get_hdd_info(line, basic_info)
+                    hdd_writer.writerow(hdd_info)
+                    idx += 1
+                    line = lines[idx].strip('\n')
+                f_fileds.append(data_fields[8])
+                break
+
             mb_os_writer.writerow(mb_os_info)
             for field in data_fields:
                 if field not in f_fileds:
